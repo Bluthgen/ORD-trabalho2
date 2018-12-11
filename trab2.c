@@ -222,18 +222,19 @@ short createTree(){
 
 int searchNode(no key, BTPAGE* p_page, long* pos){
     int i;
-    for(i= 0; i<p_page->keycount && key.id_i > p_page->key[i].id_i; i++){
+    //int comp= atoi(p_page->key[0].id_i);
+    for(i= 0; i<p_page->keycount && atoi(key.id_i) > atoi(p_page->key[i].id_i); i++){
         ;
     }
     *pos= i;
-    if(*pos < p_page->keycount && key.id_i == p_page->key[*pos].id_i)
+    if(*pos < p_page->keycount && atoi(key.id_i) == atoi(p_page->key[*pos].id_i))
         return YES;
     return NO;
 }
 
 void ins_in_page(no key, long r_child, BTPAGE* p_page){
     int i;
-    for(i= p_page->keycount; key.id_i < p_page->key[i-1].id_i && i>0; i--){
+    for(i= p_page->keycount; atoi(key.id_i) < atoi(p_page->key[i-1].id_i) && i>0; i--){
         p_page->key[i]= p_page->key[i-1];
         p_page->child[i+1]= p_page->child[i];
     }
@@ -252,7 +253,7 @@ void split(no key, long r_child, BTPAGE* p_oldpage, no* promo_key, long* promo_r
         workch[i]= p_oldpage->child[i];
     }
     workch[i]= p_oldpage->child[i];
-    for(i= MAXKEYS; key.id_i < workkeys[i-1].id_i && i>0; i--){
+    for(i= MAXKEYS; atoi(key.id_i) < atoi(workkeys[i-1].id_i) && i>0; i--){
         workkeys[i]= workkeys[i-1];
         workch[i+1]= workch[i];
     }
@@ -286,9 +287,11 @@ int insert(long rrn, no key, long* promo_r_child, no* promo_key){
         return(YES);
     }
     btread(rrn, &page);
+    if(strcmp(key.id_i, "") < 1)
+        return NO;
     found= searchNode(key, &page, &pos);
     if(found){
-        printf("Erro: tentativa de inserir chave duplicada: %i \n", key.id_i);
+        printf("Erro: tentativa de inserir chave duplicada: %s \n", key.id_i);
         return 0;
     }
     promoted= insert(page.child[pos], key, &p_b_rrn, &p_b_key);
@@ -510,14 +513,15 @@ void criaIndices(FILE* base){
     /*
         Tamanho de cada registro: sizeof(int) + sizeof(long)
     */
-    int tam, id= 0, id_max, continua;
+    int tam, id= 0, id_max, continua, i= -1;
     char buff[40], *temp;
     long offset;
     fseek(base,0, SEEK_SET);
     int numRegs;
     //fread(&numRegs, sizeof(int), 1, base);
     //printf("%d\n", numRegs);
-    for(int i= 0; i< numRegs; i++){
+    while(1){
+        i++;
         offset= ftell(base);
         continua = fread(&tam, sizeof(int), 1, base);
         if(!continua)
@@ -726,8 +730,11 @@ struct caes buscaPorOffset(long offset){
     int tam;
     fseek(base, offset, SEEK_SET);
     fread(&tam, sizeof(int), 1, base);
+    printf("Tam: %d\n", tam);
     fread(buff, sizeof(char), tam, base);
-    buff[tam] = '\0';
+    printf("Buff: %s\n", buff);
+    //buff[tam] = '\0';
+
     struct caes individuo;
     strcpy(individuo.id_i, strtok(buff, "|"));
     strcpy(individuo.id_r, strtok(NULL, "|"));
@@ -740,6 +747,7 @@ struct caes buscaPorOffset(long offset){
 }
 
 struct caes buscaPorId(int id){
+    printf("Offset: %d\n", buscaOffsetDoIndice(id));
     return buscaPorOffset(buscaOffsetDoIndice(id));
 }
 
@@ -941,45 +949,53 @@ void dialogo(){
     }
 }
 
-int searchNo(no key, BTPAGE* p_page, long* pos){
+int searchNo(no key, BTPAGE* p_page, long* pos, long *rrn){
     int i;
     BTPAGE pagina= *p_page;
     if(pagina.keycount == 0)
         return NO;
-    for(i= 0; i<pagina.keycount && strcmp(key.id_i, pagina.key[i].id_i) == -1; i++){
-        printf("%s\n", pagina.key[i].id_i);
+    for(i= 0; i<pagina.keycount && atoi(key.id_i) > atoi(pagina.key[i].id_i); i++){
+        ;
     }
     *pos= i;
-    if(*pos < pagina.keycount && !strcmp(key.id_i, pagina.key[*pos].id_i))
-        return YES;
-    if(*pos < pagina.keycount && strcmp(key.id_i, pagina.key[*pos].id_i)<0){
-        BTPAGE filho;
-        printf("%s\n", pagina.key[*pos].id_i);
-        btread(pagina.child[*pos], &p_page);
-        return searchNo(key, &p_page, pos);
+    if(atoi(pagina.key[*pos].id_i) < 0){
+        *pos= *pos - 1;
+        if(*pos < 0)
+            return NO;
     }
-    if(*pos < pagina.keycount && strcmp(key.id_i, pagina.key[*pos].id_i)>0){
+    if(*pos < pagina.keycount && atoi(key.id_i) == atoi(pagina.key[*pos].id_i))
+        return YES;
+    if(*pos < pagina.keycount && atoi(key.id_i) < atoi(pagina.key[*pos].id_i)){
         BTPAGE filho;
-        printf("%s\n", pagina.key[*pos].id_i);
-        btread(pagina.child[*pos + 1], &p_page);
-        return searchNo(key, &p_page, pos);
+        btread(pagina.child[*pos], &filho);
+        *rrn= pagina.child[*pos];
+        return searchNo(key, &filho, pos, rrn);
+    }
+    if(*pos < pagina.keycount && atoi(key.id_i) > atoi(pagina.key[*pos].id_i)){
+        BTPAGE filho;
+        btread(pagina.child[*pos+1], &filho);
+        *rrn= pagina.child[*pos+1];
+        return searchNo(key, &filho, pos, rrn);
     }
     return NO;
 }
 
 void buscaRegistro(char *idBusca){
     btopen();
-    BTPAGE pagina;
+    BTPAGE pagina, nova;
     btread(root, &pagina);
     no filtro;
     strcpy(filtro.id_i, idBusca);
-    long pos;
+    long pos, rrn;
     char *offsetS;
     long offset;
     caes individuo;
-    if(searchNo(filtro, &pagina, &pos) == YES){
-        strcpy(offsetS, &pagina.key[pos].byteOffSet);
-        offset= atol(offsetS);
+    if(searchNo(filtro, &pagina, &pos, &rrn) == YES){
+        printf("Sai da busca! %d, %d\n", rrn, pos);
+        btread(rrn, &nova);
+        printf("Li! %s\n", nova.key[pos].byteOffSet);
+        offset= atol(nova.key[pos].byteOffSet);
+        printf("Peguei o offset! %d %d\n", offset, buscaOffsetDoIndice(42));
         buscaPorOffset(offset);
     }else
         printf("Nenhum foi encontrado!");
@@ -1003,17 +1019,17 @@ int main(){
     getNumRegs();
     povoaArquivo("");
     criaIndices(base);
-    //gravaIndices();
+    gravaIndices();
     //carregaIndices();
     leNomesRacas("nomes-racas.txt");
     monta_lista();
     //buscaPorId(1);
     driver();
     printArvore();
-    trocaArquivo("individuos_num2.txt", base);
-    printArvore();
-    //buscaPorId(2);
-    buscaRegistro("42");
+    //trocaArquivo("individuos_num2.txt", base);
+    //printArvore();
+    //buscaPorId(42);
+    //buscaRegistro("42");
     //dialogo();
     fclose(base);
 }
