@@ -986,7 +986,7 @@ void dialogo(){
     base = fopen("base.txt", "r");
     criaIndices(base);
     gravaIndices();
-    leNomesRacas("nome-racas.txt");
+    leNomesRacas("nomes-racas.txt");
     monta_lista();
     driver();
     int flag=1;
@@ -1032,6 +1032,7 @@ void dialogo(){
 
 int main(){
     dialogo();
+    //povoaArquivo("");
     /*FILE* base;
     base = fopen("base.txt", "r");
     getNumRegs();
