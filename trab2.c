@@ -1003,6 +1003,20 @@ void buscaRegistro(char *idBusca){
 }
 
 void adicionaCao(){
+    caes novocao;
+    printf("\nInsira os dados do novo cão\n");
+    printf("Insira o id do novo cão: ");
+    scanf("%s", novocao.id_i); printf("\n");
+    printf("Insira o id da raça do novo cão: ");
+    scanf("%s", novocao.id_r); printf("\n");
+    printf("Insira o nome do novo cão : ");
+    scanf("%s", novocao.nome); printf("\n");
+    printf("Insira o sexo do novo cão : ");
+    scanf("%s", novocao.sexo); printf("\n");
+    FILE* arq;
+    arq = fopen("individuos_num.txt", "r+");
+    fseek(arq, 0, SEEK_END);
+    fprintf(arq,"%s%s%s%s", novocao.id_i, novocao.id_r, novocao.nome, novocao.sexo);
 
 }
 
