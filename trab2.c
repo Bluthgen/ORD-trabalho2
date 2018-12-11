@@ -980,11 +980,10 @@ void dialogo(){
             Ainda nao foi cadastrado nenhum cao, por favor digite o nome de um arquivo:\n");
     char input[40];
     getline2(input, 40);
-    buscaRegistro("42");
     povoaArquivo(input);
     getNumRegs();
     FILE* base;
-    base = fopen("base.txt", "r+");
+    base = fopen("base.txt", "r");
     criaIndices(base);
     gravaIndices();
     leNomesRacas("nome-racas.txt");
