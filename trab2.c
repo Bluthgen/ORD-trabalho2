@@ -946,19 +946,21 @@ int searchNo(no key, BTPAGE* p_page, long* pos){
     BTPAGE pagina= *p_page;
     if(pagina.keycount == 0)
         return NO;
-    for(i= 0; i<pagina.keycount && key.id_i > pagina.key[i].id_i; i++){
-        ;
+    for(i= 0; i<pagina.keycount && strcmp(key.id_i, pagina.key[i].id_i) == -1; i++){
+        printf("%s\n", pagina.key[i].id_i);
     }
     *pos= i;
-    if(*pos < pagina.keycount && key.id_i == pagina.key[*pos].id_i)
+    if(*pos < pagina.keycount && !strcmp(key.id_i, pagina.key[*pos].id_i))
         return YES;
-    if(*pos < pagina.keycount && key.id_i < pagina.key[*pos].id_i){
+    if(*pos < pagina.keycount && strcmp(key.id_i, pagina.key[*pos].id_i)<0){
         BTPAGE filho;
+        printf("%s\n", pagina.key[*pos].id_i);
         btread(pagina.child[*pos], &p_page);
         return searchNo(key, &p_page, pos);
     }
-    if(*pos < pagina.keycount && key.id_i > pagina.key[*pos].id_i){
+    if(*pos < pagina.keycount && strcmp(key.id_i, pagina.key[*pos].id_i)>0){
         BTPAGE filho;
+        printf("%s\n", pagina.key[*pos].id_i);
         btread(pagina.child[*pos + 1], &p_page);
         return searchNo(key, &p_page, pos);
     }
