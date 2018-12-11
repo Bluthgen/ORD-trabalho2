@@ -898,57 +898,6 @@ void preparaParaLerOutra(){
 	tamIndices= 0;
 }
 
-void dialogo(){
-    printf("Bem vindo(a) a aplicacao!\n \
-            Ainda nao foi cadastrado nenhum cao, por favor digite o nome de um arquivo:\n");
-    char input[40];
-    getline2(input, 40);
-    povoaArquivo(input);
-    gravaIndices();
-    carregaIndices();
-    leNomesRacas("nome-racas.txt");
-    monta_lista();
-    int flag=1;
-    int opcao;
-    while(flag){
-        printf("O que vc deseja fazer?\n \
-                0: Sair\n \
-                1: Buscar um cão pelo seu id\n \
-                2: Buscar um cão pelo sua raça\n \
-                3: Ler um novo arquivo\n");
-        input[0]= '\0';
-
-        scanf("%d", &opcao);
-        switch(opcao){
-            case 0: flag=0;
-              grava();
-              exit(1);
-            case 1:
-                printf("Qual e o id do cao a ser buscado?\n");
-                int id;
-                scanf("%d", &id);
-                buscaPorId(id);
-                break;
-            case 2:
-                printf("Qual é a raça a ser buscada?\n");
-                printRacas();
-                int id_r;
-                scanf("%d", &id_r);
-                buscaPorRaca(id_r);
-                break;
-            case 3: ;
-                printf("Qual o nome do arquivo a ser lido?\n");
-                fflush(stdin);
-                getline2(input, 40);
-                preparaParaLerOutra();
-                povoaArquivo(input);
-                printf("\nLido segundo arquivo\n");
-                monta_lista();
-                break;
-        }
-    }
-}
-
 int searchNo(no key, BTPAGE* p_page, long* pos, long *rrn){
     int i;
     BTPAGE pagina= *p_page;
@@ -1026,9 +975,65 @@ void trocaArquivo(char *filename, FILE *base){
     driver();
 }
 
-int main(){
-    //dialogo();
+void dialogo(){
+    printf("Bem vindo(a) a aplicacao!\n \
+            Ainda nao foi cadastrado nenhum cao, por favor digite o nome de um arquivo:\n");
+    char input[40];
+    getline2(input, 40);
+    buscaRegistro("42");
+    povoaArquivo(input);
+    getNumRegs();
     FILE* base;
+    base = fopen("base.txt", "r+");
+    criaIndices(base);
+    gravaIndices();
+    leNomesRacas("nome-racas.txt");
+    monta_lista();
+    driver();
+    int flag=1;
+    int opcao;
+    while(flag){
+        printf("O que vc deseja fazer?\n \
+                0: Sair\n \
+                1: Adicionar um novo cão\n \
+                2: Buscar um cão pelo seu id\n \
+                3: Listagem da Arvore B\n \
+                4: Ler um novo arquivo\n");
+        input[0]= '\0';
+
+        scanf("%d", &opcao);
+        switch(opcao){
+            case 0: flag=0;
+                grava();
+                exit(1);
+            case 1:
+                adicionaCao();
+                break;
+            case 2:
+                printf("Qual e o id do cao a ser buscado?\n");
+                int id;
+                scanf("%d", &id);
+                buscaPorId(id);
+                break;
+            case 3:
+                printArvore();
+            case 4:
+                printf("Qual o nome do arquivo a ser lido?\n");
+                fflush(stdin);
+                getline2(input, 40);
+                povoaArquivo(input);
+                trocaArquivo(input, base);
+                printf("\nLido segundo arquivo\n");
+                monta_lista();
+                break;
+        }
+    }
+    fclose(base);
+}
+
+int main(){
+    dialogo();
+    /*FILE* base;
     base = fopen("base.txt", "r");
     getNumRegs();
     povoaArquivo("");
@@ -1045,5 +1050,5 @@ int main(){
     //buscaPorId(42);
     buscaRegistro("42");
     //dialogo();
-    fclose(base);
+    fclose(base);*/
 }
