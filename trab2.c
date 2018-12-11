@@ -139,7 +139,7 @@ long btwrite(long rrn, BTPAGE* page_ptr){
 long createRoot(no key, long left, long right){
     BTPAGE page;
     long rrn= getPage();
-    printf("%d\n", rrn);
+    //printf("%d\n", rrn);
     pageInit(&page);
     page.key[0]= key;
     page.child[0]= left;
@@ -867,6 +867,13 @@ void printRacas(){
 	}
 }
 
+void resetaIndices(){
+    for(int i= 0; i<tamIndices; i++){
+        listaIndices[i].id= listaIndices[i].offset= 0;
+    }
+    tamIndices= 0;
+}
+
 void preparaParaLerOutra(){
     for(int i= 0; i<tamSec; i++){
         listaSecundaria[i].id= listaSecundaria[i].indice= 0;
@@ -934,34 +941,62 @@ void dialogo(){
     }
 }
 
+int searchNo(no key, BTPAGE* p_page, long* pos){
+    int i;
+    BTPAGE pagina= *p_page;
+    if(pagina.keycount == 0)
+        return NO;
+    for(i= 0; i<pagina.keycount && key.id_i > pagina.key[i].id_i; i++){
+        ;
+    }
+    *pos= i;
+    if(*pos < pagina.keycount && key.id_i == pagina.key[*pos].id_i)
+        return YES;
+    if(*pos < pagina.keycount && key.id_i < pagina.key[*pos].id_i){
+        BTPAGE filho;
+        btread(pagina.child[*pos], &p_page);
+        return searchNo(key, &p_page, pos);
+    }
+    if(*pos < pagina.keycount && key.id_i > pagina.key[*pos].id_i){
+        BTPAGE filho;
+        btread(pagina.child[*pos + 1], &p_page);
+        return searchNo(key, &p_page, pos);
+    }
+    return NO;
+}
+
 void buscaRegistro(char *idBusca){
-    BTPAGE *pagina;
-    btread(root, pagina);
-    printf("Lido!\n");
+    btopen();
+    BTPAGE pagina;
+    btread(root, &pagina);
     no filtro;
     strcpy(filtro.id_i, idBusca);
-    printf("%s\n", filtro.id_i);
-    short pos;
+    long pos;
     char *offsetS;
     long offset;
     caes individuo;
-    if(searchNode(filtro, pagina, &pos)){
-        printf("Entrei!\n");
-        strcpy(offsetS, pagina->key[pos].byteOffSet);
+    if(searchNo(filtro, &pagina, &pos) == YES){
+        strcpy(offsetS, &pagina.key[pos].byteOffSet);
         offset= atol(offsetS);
-        printf("%d\n", offset);
-        individuo= buscaPorOffset(offset);
-    }
+        buscaPorOffset(offset);
+    }else
+        printf("Nenhum foi encontrado!");
+    btclose();
 }
 
 void adicionaCao(){
 
 }
 
+void trocaArquivo(char *filename, FILE *base){
+    preparaParaLerOutra();
+    remove("btree.txt");
+    driver();
+}
+
 int main(){
     //dialogo();
     FILE* base;
-    FILE* arq;
     base = fopen("base.txt", "r");
     getNumRegs();
     povoaArquivo("");
@@ -973,8 +1008,10 @@ int main(){
     //buscaPorId(1);
     driver();
     printArvore();
+    trocaArquivo("individuos_num2.txt", base);
+    printArvore();
     //buscaPorId(2);
-    buscaRegistro("1");
+    buscaRegistro("42");
     //dialogo();
-
+    fclose(base);
 }
