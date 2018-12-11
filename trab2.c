@@ -531,7 +531,7 @@ void criaIndices(FILE* base){
         temp= strtok(buff, "|");
         id= atoi(temp);
         listaIndices[i].id= id;
-        listaIndices[i].offset= offset+4;
+        listaIndices[i].offset= offset;
         tamIndices= i;
     }
     //mergeSort(listaIndices, 0, i-1);
@@ -730,10 +730,10 @@ struct caes buscaPorOffset(long offset){
     int tam;
     fseek(base, offset, SEEK_SET);
     fread(&tam, sizeof(int), 1, base);
-    printf("Tam: %d\n", tam);
+    //printf("Tam: %d\n", tam);
     fread(buff, sizeof(char), tam, base);
-    printf("Buff: %s\n", buff);
-    //buff[tam] = '\0';
+    //printf("Buff: %s\n", buff);
+    buff[tam] = '\0';
 
     struct caes individuo;
     strcpy(individuo.id_i, strtok(buff, "|"));
@@ -1029,7 +1029,7 @@ int main(){
     //trocaArquivo("individuos_num2.txt", base);
     //printArvore();
     //buscaPorId(42);
-    //buscaRegistro("42");
+    buscaRegistro("42");
     //dialogo();
     fclose(base);
 }
