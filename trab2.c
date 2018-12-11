@@ -72,6 +72,7 @@ racas listaRacas[18];
 racas listaNomeRacas[100];
 int tamNomeRacas= 0;
 
+void buscaRegistro(char *idBusca);
 
 int readnome(FILE* fd, char* str){
     //char str[25];
@@ -373,15 +374,13 @@ void driver(){
         fscanf(ind, "%*[^\n]\n", NULL);
         fscanf(ind, "%*[^\n]\n", NULL);
         fseek(ind, sizeof(int)+PAGESIZE, 0);*/
-        for(i= 1; i<numRegs+1; i++){
+        for(i= 1; i<numRegs; i++){
             //readFieldNo(ind,&key);
             //printf("Vou inserir o %d\n", i);
             key= constroiNo(i);
             promoted= insert(root, key, &promoRrn, &promoKey);
             if(promoted){
-                printf("Promoção: %s, %d, %d\n", promoKey.id_i, root, promoRrn);
                 root= createRoot(promoKey, root, promoRrn);
-                printf("Root: %d\n", root);
             }
         }
     }
@@ -786,7 +785,7 @@ struct caes buscaPorOffset(long offset){
 }
 
 struct caes buscaPorId(int id){
-    printf("Offset: %d\n", buscaOffsetDoIndice(id));
+    //printf("Offset: %d\n", buscaOffsetDoIndice(id));
     return buscaPorOffset(buscaOffsetDoIndice(id));
 }
 
@@ -1030,11 +1029,11 @@ void buscaRegistro(char *idBusca){
     long offset;
     caes individuo;
     if(searchNo(filtro, &pagina, &pos, &rrn) == YES){
-        printf("Sai da busca! %d, %d\n", rrn, pos);
+        //printf("Sai da busca! %d, %d\n", rrn, pos);
         btread(rrn, &nova);
-        printf("Li! %s\n", nova.key[pos].byteOffSet);
+        //printf("Li! %s\n", nova.key[pos].byteOffSet);
         offset= atol(nova.key[pos].byteOffSet);
-        printf("Peguei o offset! %d %d\n", offset, buscaOffsetDoIndice(42));
+        //printf("Peguei o offset! %d %d\n", offset, buscaOffsetDoIndice(42));
         buscaPorOffset(offset);
     }else
         printf("Nenhum foi encontrado!");
@@ -1048,7 +1047,11 @@ void adicionaCao(){
 void trocaArquivo(char *filename, FILE *base){
     preparaParaLerOutra();
     remove("btree.txt");
+    getNumRegs();
+    povoaArquivo(filename);
+    criaIndices(base);
     driver();
+    gravaIndices();
 }
 
 int main(){
@@ -1065,10 +1068,10 @@ int main(){
     monta_lista();
     //buscaPorId(1);
     printArvore();
-    //trocaArquivo("individuos_num2.txt", base);
-    //printArvore();
+    trocaArquivo("individuos_num2.txt", base);
+    printArvore();
     buscaPorId(5);
-    buscaRegistro("42");
+    buscaRegistro("41");
     //dialogo();
     fclose(base);
 }
