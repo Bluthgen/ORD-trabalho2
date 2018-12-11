@@ -18,8 +18,6 @@ typedef struct caes{
     char sexo[2];
 }caes;
 
-
-
 typedef struct no{
     char id_i[5];
     char byteOffSet[7];
@@ -29,15 +27,14 @@ typedef struct no{
 typedef struct{
     short keycount;
     no key[MAXKEYS];
-    short child[MAXKEYS+1];
+    long child[MAXKEYS+1];
 }BTPAGE;
 #define PAGESIZE sizeof(BTPAGE)
 
-short root;
+long root;
 FILE* btfd;
 FILE* infd;
 int numRegs;
-
 
 int readnome(FILE* fd, char* str){
     //char str[25];
@@ -70,35 +67,46 @@ int btclose(){
     fclose(btfd);
 }
 
-short getRoot(){
-    //short root;
-    if(root != NULL)
-        return root;
-
-    fseek(btfd, 0L, 0);
-    if(fread(&root, sizeof(short), 1, btfd) == 0){
-        printf("Erro: Incapaz de obter a raiz\n");
-        exit(1);
+long getRoot(){
+    long root= 0;
+    if(btfd != NULL){
+        fseek(btfd, 0L, 0);
+        if(!fread(&root, sizeof(long), 1, btfd)){
+            printf("Erro: Incapaz de obter a raiz\n");
+            exit(1);
+        }
+    }else{
+        btopen();
+        //fseek(btfd, 0L, 0);
+        if(fread(&root, sizeof(long), 1, btfd) == 0){
+            printf("Erro: Incapaz de obter a raiz\n");
+            exit(1);
+        }
+        btclose();
     }
+    root++;
     return root;
 }
 
-void putRoot(short *root){
+void putRoot(long raiz){
+    //short r= 2*(raiz/2 + raiz%2);
+    long r= raiz - 1;
     fseek(btfd, 0L, 0);
     if(btfd != NULL){
-        fwrite(root, sizeof(short), 1, btfd);
+        if(!fwrite(&r, sizeof(long), 1, btfd))
+            printf("Erro na escrita de Root\n");
     }else{
         btopen();
-        fwrite(root, sizeof(short), 1, btfd);
+        fwrite(&r, sizeof(long), 1, btfd);
         btclose();
     }
 }
 
-short getPage(){
+long getPage(){
     long addr;
-    fseek(btfd, 0L, 2) - 2L;
+    fseek(btfd, 0L, 2) - 4L;
     addr= ftell(btfd);
-    return (short)addr/PAGESIZE;
+    return (long)addr/PAGESIZE;
 }
 
 void pageInit(BTPAGE* p_page){
@@ -110,14 +118,14 @@ void pageInit(BTPAGE* p_page){
     p_page->child[MAXKEYS]= NIL;
 }
 
-int btread(short rrn, BTPAGE* page_ptr){
-    long addr= ((long)rrn)*((long)PAGESIZE) + 2L;
+int btread(long rrn, BTPAGE* page_ptr){
+    long addr= ((long)rrn)*((long)PAGESIZE) + 4L;
     fseek(btfd, addr, 0);
     return fread(page_ptr, PAGESIZE, 1, btfd);
 }
 
-long btwrite(short rrn, BTPAGE* page_ptr){
-    long addr= ((long)rrn * (long)PAGESIZE) + 2L;
+long btwrite(long rrn, BTPAGE* page_ptr){
+    long addr= ((long)rrn * (long)PAGESIZE) + 4L;
     fseek(btfd, addr, 0);
     //short keycount= page_ptr.keycount;
     //short *child= page_ptr.child;
@@ -128,9 +136,9 @@ long btwrite(short rrn, BTPAGE* page_ptr){
     return fwrite(page_ptr, PAGESIZE, 1, btfd);
 }
 
-short createRoot(no key, short left, short right){
+long createRoot(no key, long left, long right){
     BTPAGE page;
-    short rrn= getPage();
+    long rrn= getPage();
     printf("%d\n", rrn);
     pageInit(&page);
     page.key[0]= key;
@@ -138,7 +146,7 @@ short createRoot(no key, short left, short right){
     page.child[1]= right;
     page.keycount= 1;
     btwrite(rrn, &page);
-    putRoot(&rrn);
+    putRoot(rrn);
     return rrn;
 }
 
@@ -212,7 +220,7 @@ short createTree(){
 }
 
 
-int searchNode(no key, BTPAGE* p_page, short* pos){
+int searchNode(no key, BTPAGE* p_page, long* pos){
     int i;
     for(i= 0; i<p_page->keycount && key.id_i > p_page->key[i].id_i; i++){
         ;
@@ -223,7 +231,7 @@ int searchNode(no key, BTPAGE* p_page, short* pos){
     return NO;
 }
 
-void ins_in_page(no key, short r_child, BTPAGE* p_page){
+void ins_in_page(no key, long r_child, BTPAGE* p_page){
     int i;
     for(i= p_page->keycount; key.id_i < p_page->key[i-1].id_i && i>0; i--){
         p_page->key[i]= p_page->key[i-1];
@@ -234,11 +242,11 @@ void ins_in_page(no key, short r_child, BTPAGE* p_page){
     p_page->child[i+1]= r_child;
 }
 
-void split(no key, short r_child, BTPAGE* p_oldpage, no* promo_key, short* promo_r_child, BTPAGE* p_newpage){
+void split(no key, long r_child, BTPAGE* p_oldpage, no* promo_key, long* promo_r_child, BTPAGE* p_newpage){
     int i;
-    short mid;
+    long mid;
     no workkeys[MAXKEYS+1];
-    short workch[MAXKEYS+2];
+    long workch[MAXKEYS+2];
     for(i= 0; i<MAXKEYS; i++){
         workkeys[i]= p_oldpage->key[i];
         workch[i]= p_oldpage->child[i];
@@ -267,10 +275,10 @@ void split(no key, short r_child, BTPAGE* p_oldpage, no* promo_key, short* promo
     *promo_key= workkeys[MINKEYS];
 }
 
-int insert(short rrn, no key, short* promo_r_child, no* promo_key){
+int insert(long rrn, no key, long* promo_r_child, no* promo_key){
     BTPAGE page, newpage;
     int found,promoted;
-    short pos, p_b_rrn;
+    long pos, p_b_rrn;
     no p_b_key;
     if(rrn == NIL){
         *promo_key= key;
@@ -301,31 +309,33 @@ int insert(short rrn, no key, short* promo_r_child, no* promo_key){
 
 void driver(){
     int promoted, i;
-    short promoRrn;
+    long promoRrn;
     no promoKey, key;
     if(btopen())
         root= getRoot();
-    else
+    else{
         root= createTree();
-    FILE* ind;
-    if ((ind = fopen("indices.txt", "r")) == NULL) {
-        printf("Erro na leitura do arquivo Individuos--- programa abortado\n");
-        exit(1);
-    }
-    fscanf(ind, "%*[^\n]\n", NULL);
-    fscanf(ind, "%*[^\n]\n", NULL);
-    fseek(ind, sizeof(int)+PAGESIZE, 0);
-    for(i= 0; i<numRegs; i++){
-        readFieldNo(ind,&key);
-        promoted= insert(root, key, &promoRrn, &promoKey);
-        if(promoted)
-            root= createRoot(promoKey, root, promoRrn);
+        FILE* ind;
+        if ((ind = fopen("indices.txt", "r")) == NULL) {
+            printf("Erro na leitura do arquivo Indices--- programa abortado\n");
+            exit(1);
+        }
+        fscanf(ind, "%*[^\n]\n", NULL);
+        fscanf(ind, "%*[^\n]\n", NULL);
+        fseek(ind, sizeof(int)+PAGESIZE, 0);
+        for(i= 0; i<numRegs; i++){
+            readFieldNo(ind,&key);
+            promoted= insert(root, key, &promoRrn, &promoKey);
+            if(promoted)
+                root= createRoot(promoKey, root, promoRrn);
+        }
     }
     //printArvore();
+    //putRoot(root);
     btclose();
 }
 
-void printPagina(short rrn){
+void printPagina(long rrn){
     BTPAGE pagina, filho;
     btread(rrn, &pagina);
     printf("RRN: %d\n", rrn);
@@ -354,7 +364,7 @@ void printPagina(short rrn){
 
 void printArvore(){
     if(btopen()){
-        root= getRoot();
+        //root= getRoot();
         printf("---+- Página Raiz -+---\n");
         printPagina(root);
         btclose();
@@ -461,9 +471,9 @@ void mergeSort(indices arr[], int l, int r){
 void leNomesRacas(char* nome){
     FILE* arq;
     if(!strlen(nome))
-        nome="lista de racas.txt";
+        nome="nomes-racas.txt";
     if ((arq = fopen(nome, "r")) == NULL) {
-        printf("Erro na criacão do arquivo Racas--- programa abortado\n");
+        printf("Erro na criacão do arquivo Racas: %s--- programa abortado\n", nome);
         exit(1);
     }
     char buff[40];
@@ -500,12 +510,14 @@ void criaIndices(FILE* base){
     /*
         Tamanho de cada registro: sizeof(int) + sizeof(long)
     */
-    int tam, id= 0, id_max, continua, i= -1;
+    int tam, id= 0, id_max, continua;
     char buff[40], *temp;
     long offset;
     fseek(base,0, SEEK_SET);
-    while(1){
-        i++;
+    int numRegs;
+    //fread(&numRegs, sizeof(int), 1, base);
+    //printf("%d\n", numRegs);
+    for(int i= 0; i< numRegs; i++){
         offset= ftell(base);
         continua = fread(&tam, sizeof(int), 1, base);
         if(!continua)
@@ -704,8 +716,7 @@ long buscaOffsetDoIndice(int id){
     return -1;
 }
 
-struct caes buscaPorId(int id){
-    long offset= buscaOffsetDoIndice(id);
+struct caes buscaPorOffset(long offset){
     FILE* base;
     if ((base = fopen("base.txt", "r+")) == NULL) {
         printf("Erro na criação do arquivo Base--- programa abortado\n");
@@ -726,6 +737,10 @@ struct caes buscaPorId(int id){
     printf("Encontrado individuo:\n\tId: %s\n\tRaca: %s\n\tNome: %s\n\tSexo: %s\n", individuo.id_i, getNomeRaca(atoi(individuo.id_r)), individuo.nome, individuo.sexo);
     fclose(base);
     return individuo;
+}
+
+struct caes buscaPorId(int id){
+    return buscaPorOffset(buscaOffsetDoIndice(id));
 }
 
 
@@ -919,19 +934,47 @@ void dialogo(){
     }
 }
 
+void buscaRegistro(char *idBusca){
+    BTPAGE *pagina;
+    btread(root, pagina);
+    printf("Lido!\n");
+    no filtro;
+    strcpy(filtro.id_i, idBusca);
+    printf("%s\n", filtro.id_i);
+    short pos;
+    char *offsetS;
+    long offset;
+    caes individuo;
+    if(searchNode(filtro, pagina, &pos)){
+        printf("Entrei!\n");
+        strcpy(offsetS, pagina->key[pos].byteOffSet);
+        offset= atol(offsetS);
+        printf("%d\n", offset);
+        individuo= buscaPorOffset(offset);
+    }
+}
 
+void adicionaCao(){
+
+}
 
 int main(){
+    //dialogo();
     FILE* base;
     FILE* arq;
     base = fopen("base.txt", "r");
     getNumRegs();
     povoaArquivo("");
     criaIndices(base);
-    gravaIndices();
+    //gravaIndices();
+    //carregaIndices();
+    leNomesRacas("nomes-racas.txt");
+    monta_lista();
+    //buscaPorId(1);
     driver();
     printArvore();
-
+    //buscaPorId(2);
+    buscaRegistro("1");
     //dialogo();
 
 }
