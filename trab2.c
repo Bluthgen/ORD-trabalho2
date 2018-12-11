@@ -36,6 +36,43 @@ FILE* btfd;
 FILE* infd;
 int numRegs;
 
+int vetor_aux[100];
+
+
+typedef struct racas{
+    int id;
+    char raca[30];
+}racas;
+
+
+
+typedef struct indices{
+    int id;
+    long offset;
+}indices;
+
+typedef struct invertida{
+    int id;
+    int raca;
+    long offset;
+    long prox;
+}invertida;
+
+typedef struct secundaria{
+    int id;
+    long indice;
+}secundaria;
+
+secundaria listaSecundaria[100];
+invertida listaInvertida[500];
+int tamSec= 0, tamInvert= 0;
+indices listaIndices[500];
+int tamIndices= 0;
+racas listaRacas[18];
+racas listaNomeRacas[100];
+int tamNomeRacas= 0;
+
+
 int readnome(FILE* fd, char* str){
     //char str[25];
     char c;
@@ -203,19 +240,28 @@ int readfield(FILE* fd, caes* ind){
 }
 
 
-short createTree(){
+no constroiNo(int i){
+    no key;
+    itoa(listaIndices[i].id, key.id_i, 10);
+    ltoa(listaIndices[i].offset, key.byteOffSet, 10);
+    //printf("Construido no com id %s e offset %s\n", key.id_i, key.byteOffSet);
+    return key;
+}
+
+short createTree(int i){
     no key;
     char str[25];
     btfd= fopen("btree.txt", "w");
     fclose(btfd);
     btopen();
-    FILE* ind;
+    /*FILE* ind;
     if ((ind = fopen("indices.txt", "r")) == NULL) {
         printf("Erro na leitura do arquivo Individuos--- programa abortado\n");
         exit(1);
-    }
-    readFieldNo(ind,&key);
-    fclose(ind);
+    }*/
+    //readFieldNo(ind,&key);
+    //fclose(ind);
+    key= constroiNo(i);
     return createRoot(key,NIL,NIL);
 }
 
@@ -287,6 +333,7 @@ int insert(long rrn, no key, long* promo_r_child, no* promo_key){
         return(YES);
     }
     btread(rrn, &page);
+    //printf("Inserindo o id %s\n", key.id_i);
     if(strcmp(key.id_i, "") < 1)
         return NO;
     found= searchNode(key, &page, &pos);
@@ -317,25 +364,52 @@ void driver(){
     if(btopen())
         root= getRoot();
     else{
-        root= createTree();
-        FILE* ind;
+        root= createTree(0);
+        /*FILE* ind;
         if ((ind = fopen("indices.txt", "r")) == NULL) {
             printf("Erro na leitura do arquivo Indices--- programa abortado\n");
             exit(1);
         }
         fscanf(ind, "%*[^\n]\n", NULL);
         fscanf(ind, "%*[^\n]\n", NULL);
-        fseek(ind, sizeof(int)+PAGESIZE, 0);
-        for(i= 0; i<numRegs; i++){
-            readFieldNo(ind,&key);
+        fseek(ind, sizeof(int)+PAGESIZE, 0);*/
+        for(i= 1; i<numRegs+1; i++){
+            //readFieldNo(ind,&key);
+            //printf("Vou inserir o %d\n", i);
+            key= constroiNo(i);
             promoted= insert(root, key, &promoRrn, &promoKey);
-            if(promoted)
+            if(promoted){
+                printf("Promoção: %s, %d, %d\n", promoKey.id_i, root, promoRrn);
                 root= createRoot(promoKey, root, promoRrn);
+                printf("Root: %d\n", root);
+            }
         }
     }
     //printArvore();
+    mergeSort(listaIndices, 0, tamIndices-1);
     //putRoot(root);
     btclose();
+}
+
+void print(long rrn){
+    BTPAGE pagina, filho;
+    btread(rrn, &pagina);
+    printf("RRN: %d\n", rrn);
+    if(pagina.keycount > 0){
+        printf("Chaves: ");
+        for(int i= 0; i<pagina.keycount; i++){
+            printf("%s |", pagina.key[i].id_i);
+        }
+        printf("\nByte-offsets: ");
+        for(int i= 0; i<pagina.keycount+1; i++){
+            printf("%s |", pagina.key[i].byteOffSet);
+        }
+        printf("\nPonteiros: ");
+        for(int i= 0; i<pagina.keycount+1; i++){
+            printf("%d |", pagina.child[i]);
+        }
+    }
+    printf("\n-+----------------------------+-\n");
 }
 
 void printPagina(long rrn){
@@ -377,41 +451,6 @@ void printArvore(){
     }
 }
 
-int vetor_aux[100];
-
-
-typedef struct racas{
-    int id;
-    char raca[30];
-}racas;
-
-
-
-typedef struct indices{
-    int id;
-    long offset;
-}indices;
-
-typedef struct invertida{
-    int id;
-    int raca;
-    long offset;
-    long prox;
-}invertida;
-
-typedef struct secundaria{
-    int id;
-    long indice;
-}secundaria;
-
-secundaria listaSecundaria[100];
-invertida listaInvertida[500];
-int tamSec= 0, tamInvert= 0;
-indices listaIndices[500];
-int tamIndices= 0;
-racas listaRacas[18];
-racas listaNomeRacas[100];
-int tamNomeRacas= 0;
 
 
 int getline2 (char *str, int tam){
@@ -1019,16 +1058,16 @@ int main(){
     getNumRegs();
     povoaArquivo("");
     criaIndices(base);
+    driver();
     gravaIndices();
     //carregaIndices();
     leNomesRacas("nomes-racas.txt");
     monta_lista();
     //buscaPorId(1);
-    driver();
     printArvore();
     //trocaArquivo("individuos_num2.txt", base);
     //printArvore();
-    //buscaPorId(42);
+    buscaPorId(5);
     buscaRegistro("42");
     //dialogo();
     fclose(base);
